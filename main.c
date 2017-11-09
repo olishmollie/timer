@@ -3,9 +3,10 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 
 void print_report(time_t);
-
+void print_status();
 char *create_directory();
 int start_timer(void);
 int stop_timer(void);
@@ -31,16 +32,19 @@ int main(int argc, char *argv[])
     char *dirname = create_directory();
     if (!dirname) {
 	printf("fatal: unable to create '~/.timer' directory\n");
-	exit(1);
+	exit(errno);
     }
 
     snprintf(filename, MAXBUFSIZE, "%s/start.tm", dirname);
+    free(dirname);
 
     int success = 0;
     if (strcmp(command, "start") == 0) {
 	success = start_timer();
     } else if (strcmp(command, "stop") == 0) {
 	success = stop_timer();
+    } else if (strcmp(command, "status") == 0) {
+	print_status();
     } else {
 	unknown_command(command);
     }
@@ -72,14 +76,25 @@ void print_report(time_t start_time)
     printf("hours:\t%.2f\n", hrs);
 }
 
+void print_status()
+{
+    int running = is_running();
+    printf("timer is %srunning\n", running ? "" : "not ");
+}
+
 char *create_directory()
 {
-    /* TODO: mkdir error handling - return NULL? */
-    char *homedir = malloc(MAXBUFSIZE*sizeof(char));
-    homedir = getenv("HOME");
+    char *homedir = getenv("HOME");
     char *dirname = malloc(MAXBUFSIZE*sizeof(char));
     snprintf(dirname, MAXBUFSIZE, "%s/.timer", homedir);
+
+    errno = 0;
     mkdir(dirname, 0777);
+    if (errno == EACCES || errno == EMLINK ||
+	    errno == ENOSPC || errno == EROFS) {
+	return NULL;
+    }
+
     return dirname;
 }
 
@@ -97,8 +112,7 @@ int start_timer()
 	fclose(f);
 	return 1;
     } else {
-	printf("timer is running. ");
-	printf("run 'timer stop' to stop timer\n");
+	print_status();
 	return 0;
     }
 }
@@ -119,7 +133,7 @@ int stop_timer()
 	print_report(t);
 	return 1;
     } else {
-	printf("run 'timer start' to start timer\n");
+	print_status();
 	return 0;
     }
 }
@@ -141,5 +155,5 @@ void unknown_command(char* arg)
 
 void print_usage()
 {
-    printf("usage: timer [start/stop]\n");
+    printf("usage: timer [start/stop/status]\n");
 }
