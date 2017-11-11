@@ -134,6 +134,7 @@ void list_timers()
                 continue;
             printf("%s\n", ent->d_name);
         }
+        closedir(dir);
     } else {
         fprintf(stderr, "Unable to open root dir\n");
         exit(1);
