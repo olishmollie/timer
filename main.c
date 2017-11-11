@@ -7,7 +7,9 @@
 #include <errno.h>
 
 void print_report(time_t);
-void print_status();
+void print_status(void);
+void list_timers(void);
+int dir_exists(char*);
 int create_directory(char*);
 int start_timer(void);
 int stop_timer(void);
@@ -16,13 +18,29 @@ void unknown_command(char*);
 void print_usage(void);
 
 const unsigned long MAXBUFSIZE = 500;
-const char *commands[] = { "start", "stop", "status" };
+char root[MAXBUFSIZE];
 static char filename[MAXBUFSIZE];
+
+const char *commands[] = { "start", "stop", "status", "list" };
 
 int main(int argc, char *argv[])
 {
-    if (argc <= 2) {
+    if (argc <= 1) {
         print_usage();
+        exit(1);
+    }
+
+    /* Create root directory */
+    snprintf(root, MAXBUFSIZE, "%s/.timer", getenv("HOME"));
+    if (!dir_exists(root)) {
+        if (!create_directory(root)) {
+            fprintf(stderr, "fatal: unable to create timer directory\n");
+            exit(1);
+        }
+    }
+
+    if (strcmp(argv[1], "list") == 0) {
+        list_timers();
         exit(1);
     }
 
@@ -49,14 +67,6 @@ int main(int argc, char *argv[])
     }
     if (!valid) {
         unknown_command(command);
-        exit(1);
-    }
-
-    /* Create '~/.timer' directory */
-    char root[MAXBUFSIZE];
-    snprintf(root, MAXBUFSIZE, "%s/.timer", getenv("HOME"));
-    if (!create_directory(root)) {
-        fprintf(stderr, "fatal: unable to create timer directory\n");
         exit(1);
     }
 
@@ -112,6 +122,22 @@ void print_status()
 {
     int running = is_running();
     printf("timer is %srunning\n", running ? "" : "not ");
+}
+
+void list_timers()
+{
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir(root)) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            if (strstr(ent->d_name, "."))
+                continue;
+            printf("%s\n", ent->d_name);
+        }
+    } else {
+        fprintf(stderr, "Unable to open root dir\n");
+        exit(1);
+    }
 }
 
 int start_timer()
