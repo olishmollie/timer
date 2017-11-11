@@ -5,6 +5,7 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <getopt.h>
 
 void print_report(time_t);
 void print_status(void);
@@ -22,6 +23,7 @@ char root[MAXBUFSIZE];
 static char filename[MAXBUFSIZE];
 
 const char *commands[] = { "start", "stop", "status", "list" };
+const size_t num_commands = sizeof(commands)/sizeof(commands[0]);
 
 int main(int argc, char *argv[])
 {
@@ -29,6 +31,35 @@ int main(int argc, char *argv[])
         print_usage();
         exit(1);
     }
+
+    char *tname, *command;
+    char dirname[MAXBUFSIZE];
+    int c, nflag = 0;
+
+    while ((c = getopt(argc, argv, "n:")) != -1) {
+       switch(c) {
+           case 'n':
+               nflag = 1;
+               tname = optarg;
+               /* Make sure name isn't a valid command */
+               for (int i = 0; i < num_commands; i++) {
+                   if (strcmp(tname, commands[i]) == 0) {
+                       fprintf(stderr, "fatal: timer name cannot be a valid command\n");
+                       exit(1);
+                   }
+               }
+               break;
+           default:
+               ;
+       }
+    }
+
+    if (optind == argc) {
+        print_usage();
+        exit(1);
+    }
+
+    command = argv[optind];
 
     /* Create root directory */
     snprintf(root, MAXBUFSIZE, "%s/.timer", getenv("HOME"));
@@ -39,46 +70,16 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (strcmp(argv[1], "list") == 0) {
-        list_timers();
-        exit(1);
-    }
-
-    char *name, *command;
-    size_t num_commands = sizeof(commands)/sizeof(commands[0]);
-
-    /* Make sure name isn't a valid command */
-    name = argv[1];
-    for (int i = 0; i < num_commands; i++) {
-        if (strcmp(name, commands[i]) == 0) {
-            fprintf(stderr, "fatal: name cannot be a valid command\n");
+    if (nflag) {
+        /* Create '~/.timer/<name>' directory */
+        snprintf(dirname, MAXBUFSIZE, "%s/%s", root, tname);
+        if (!create_directory(dirname)) {
+            fprintf(stderr, "fatal: unable to create '%s' directory\n", dirname);
             exit(1);
         }
     }
 
-    /* Check if command is valid */
-    command = argv[2];
-    int valid = 0;
-    for (int i = 0; i < num_commands; i++) {
-        if (strcmp(command, commands[i]) == 0) {
-            valid = 1;
-            break;
-        }
-    }
-    if (!valid) {
-        unknown_command(command);
-        exit(1);
-    }
-
-    /* Create '~/.timer/<name>' directory */
-    char dirname[MAXBUFSIZE];
-    snprintf(dirname, MAXBUFSIZE, "%s/%s", root, name);
-    if (!create_directory(dirname)) {
-        fprintf(stderr, "fatal: unable to create '%s' directory\n", dirname);
-        exit(1);
-    }
-
-    snprintf(filename, MAXBUFSIZE, "%s/start.tm", dirname);
+    snprintf(filename, MAXBUFSIZE, "%s/start.tm", nflag ? dirname : root);
 
     int success = 0;
     if (strcmp(command, "start") == 0) {
@@ -87,6 +88,8 @@ int main(int argc, char *argv[])
         success = stop_timer();
     } else if (strcmp(command, "status") == 0) {
         print_status();
+    } else if (strcmp(command, "list") == 0) {
+        list_timers();
     } else {
         unknown_command(command);
     }
@@ -222,6 +225,7 @@ void unknown_command(char* arg)
 
 void print_usage()
 {
-    printf("usage: timer <name> start\n");
-    printf("       timer <name> stop\n");
+    printf("usage: timer [-n <name>] start\n");
+    printf("       timer [-n <name>] stop\n");
+    printf("       timer list\n");
 }
