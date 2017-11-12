@@ -7,12 +7,12 @@
 #include <errno.h>
 #include <getopt.h>
 #include <stdarg.h>
-#include <readline/readline.h>
 
 #include "timer.h"
 
 const unsigned long MAXBUFSIZE = 500;
 const int MAXTIMERS = 25;
+char *command_list[MAXTIMERS];
 char root[MAXBUFSIZE];
 
 int main(int argc, char *argv[])
@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
     }
 
     int numtimers = 0;
-    char *list[MAXTIMERS] = { 0 };
-    compile_timer_list(list, &numtimers);
+
+    compile_timer_list(command_list, &numtimers);
 
     char *command, *tname = NULL;
     char dirname[MAXBUFSIZE];
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
         } else if (strcmp(command, "status") == 0) {
             print_status(tname);
         } else if (strcmp(command, "list") == 0) {
-            print_list(list, numtimers);
+            print_list(command_list, numtimers);
         } else {
             error("unknown command %s", command);
         }
