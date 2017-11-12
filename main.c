@@ -32,8 +32,6 @@ int main(int argc, char *argv[])
 
     int numtimers = 0;
 
-    compile_timer_list(command_list, &numtimers);
-
     char *command, *tname = NULL;
     char dirname[MAXBUFSIZE];
     int c, nflag = 0, dflag = 0;
@@ -93,7 +91,7 @@ int main(int argc, char *argv[])
         } else if (strcmp(command, "status") == 0) {
             print_status(tname);
         } else if (strcmp(command, "list") == 0) {
-            print_list(command_list, numtimers);
+            print_list();
         } else {
             error("unknown command %s", command);
         }
@@ -133,37 +131,25 @@ void print_status(char *tname)
     printf("%s is %srunning\n", name, running ? "" : "not ");
 }
 
-void compile_timer_list(char **list, int *numtimers)
+void print_list()
 {
     DIR *dir;
     struct dirent *ent;
+    int status;
     if ((dir = opendir(root)) != NULL) {
-        int i = 0;
+        /* Print status of anonymous timer */
+        status = is_running(NULL);
+        printf("root: %srunning\n", status ? "" : "not ");
         while ((ent = readdir(dir)) != NULL) {
-            if (i == MAXTIMERS) {
-                error("maximum number of timers (%d) reached", MAXTIMERS);
-            }
             if (strstr(ent->d_name, ".")) {
                 continue;
             }
-            list[i++] = ent->d_name;
+            status = is_running(ent->d_name);
+            printf("%s: %srunning\n", ent->d_name, status ? "" : "not ");
         }
-        *numtimers = i;
         closedir(dir);
     } else {
         error("unable to access timer directory");
-    }
-}
-
-void print_list(char **list, int len)
-{
-    int status;
-    /* Print status of anonymous timer */
-    status = is_running(NULL);
-    printf("root: %srunning\n", status ? "" : "not ");
-    for (int i = 0; i < len; i++) {
-        status = is_running(list[i]);
-        printf("%s: %srunning\n", list[i], status ? "" : "not ");
     }
 }
 

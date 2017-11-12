@@ -3,8 +3,7 @@
 
 void print_report(time_t);
 void print_status(char*);
-void compile_timer_list(char**, int*);
-void print_list(char**, int);
+void print_list();
 int dir_exists(char*);
 int create_directory(char*);
 int start_timer(char*);
