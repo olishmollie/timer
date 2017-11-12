@@ -6,6 +6,8 @@
 #include <time.h>
 #include <errno.h>
 #include <getopt.h>
+#include <stdarg.h>
+#include <readline/readline.h>
 
 #include "timer.h"
 
@@ -42,7 +44,7 @@ int main(int argc, char *argv[])
                nflag = 1;
                tname = optarg;
                if (is_command(tname)) {
-                   error("option name cannot be command");
+                   error("invalid name '%s'", tname);
                }
                break;
            case 'd':
@@ -56,16 +58,11 @@ int main(int argc, char *argv[])
        }
     }
 
-    if (nflag && dflag) {
-        print_usage();
-        exit(1);
-    }
-
     if (nflag) {
         /* Create '~/.timer/<name>' directory */
         snprintf(dirname, MAXBUFSIZE, "%s/%s", root, tname);
         if (!create_directory(dirname)) {
-            error("unable to create timer");
+            error("unable to create timer '%s'", tname);
         }
     }
 
@@ -78,7 +75,7 @@ int main(int argc, char *argv[])
         errno = 0;
         rmdir(dirname);
         if (errno == ENOENT) {
-            error("cannot find named timer");
+            error("cannot find timer '%s'", tname);
         }
         exit(0);
     }
@@ -98,7 +95,7 @@ int main(int argc, char *argv[])
         } else if (strcmp(command, "list") == 0) {
             print_list(list, numtimers);
         } else {
-            error("unknown command");
+            error("unknown command %s", command);
         }
     }
 
@@ -144,7 +141,7 @@ void compile_timer_list(char **list, int *numtimers)
         int i = 0;
         while ((ent = readdir(dir)) != NULL) {
             if (i == MAXTIMERS) {
-                error("maximum number of timers reached");
+                error("maximum number of timers (%d) reached", MAXTIMERS);
             }
             if (strstr(ent->d_name, ".")) {
                 continue;
@@ -154,7 +151,7 @@ void compile_timer_list(char **list, int *numtimers)
         *numtimers = i;
         closedir(dir);
     } else {
-        error("unable to access timer root");
+        error("unable to access timer directory");
     }
 }
 
@@ -185,7 +182,7 @@ int start_timer(char *tname)
             fclose(f);
             return 1;
         } else {
-            error("unable to start timer");
+            error("unable to start timer '%s'", tname ? tname : "root");
         }
         return 0;
     }
@@ -208,7 +205,7 @@ int stop_timer(char *tname)
             print_report(t);
             return 1;
         } else {
-            error("unable to stop timer");
+            error("unable to stop timer '%s'", tname ? tname : "root");
         }
         return 0;
     }
@@ -269,8 +266,12 @@ void print_usage()
     printf("       timer list\n");
 }
 
-void error(char *msg)
+void error(char *fmt, ...)
 {
-    fprintf(stderr, "timer: %s\n", msg);
-    exit(1);
+    fprintf(stderr, "timer: ");
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    printf("\n");
 }

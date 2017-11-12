@@ -12,6 +12,6 @@ int stop_timer(char*);
 int is_running(char*);
 int is_command(char*);
 void print_usage(void);
-void error(char*);
+void error(char*, ...);
 
 #endif
