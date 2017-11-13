@@ -8,8 +8,13 @@
 
 #include "timer.h"
 
-const unsigned long MAXBUFSIZE = 500;
-const int MAXTIMERS = 25;
+#ifdef _WIN32 
+# define  mkdir( D, M )  _mkdir( D ) 
+#endif 
+
+#define MAXBUFSIZE 500
+#define MAXTIMERS 25
+
 char root[MAXBUFSIZE];
 
 int main(int argc, char *argv[])
