@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <string.h>
 #include <time.h>
@@ -8,9 +10,9 @@
 
 #include "timer.h"
 
-#ifdef _WIN32 
-# define  mkdir( D, M )  _mkdir( D ) 
-#endif 
+#ifdef _WIN32
+# define  mkdir( D, M )  _mkdir( D )
+#endif
 
 #define MAXBUFSIZE 500
 #define MAXTIMERS 25
