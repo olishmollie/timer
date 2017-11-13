@@ -29,10 +29,13 @@ int main(int argc, char *argv[])
         }
     }
 
+    create_timer("root");
+
     char *command, *tname = NULL;
 
-    // TODO: variadic args
     command = argv[1];
+
+    // TODO: variadic args
     if (argc >= 3)
         tname = argv[2];
 
@@ -96,9 +99,6 @@ void print_list()
     struct dirent *ent;
     int status;
     if ((dir = opendir(root)) != NULL) {
-        /* Print status of 'root' timer */
-        status = is_running(NULL);
-        printf("root: %srunning\n", status ? "" : "not ");
         while ((ent = readdir(dir)) != NULL) {
             if (strstr(ent->d_name, ".")) {
                 continue;
@@ -138,20 +138,21 @@ void delete_timer(char *tname)
 
 int start_timer(char *tname)
 {
+    if (tname == NULL) tname = "root";
     if (is_running(tname)) {
 	error("%s is running", tname);
 	return 1;
     } else {
         FILE *f;
 	char filename[MAXBUFSIZE];
-	snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname ? tname : "");
+	snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname);
         if ((f = fopen(filename, "w")) != NULL) {
             time_t t = time(NULL);
             fprintf(f, "%lu\n", t);
             fclose(f);
             return 1;
         } else {
-            error("unable to start timer '%s'", tname ? tname : "root");
+            error("unable to start timer '%s'", tname);
         }
         return 0;
     }
@@ -159,6 +160,7 @@ int start_timer(char *tname)
 
 int stop_timer(char *tname)
 {
+    if (tname == NULL) tname = "root";
     if (!is_running(tname)) {
 	error("%s is not running", tname);
         return 1;
@@ -184,7 +186,7 @@ int is_running(char *tname)
 {
     int result;
     char filename[MAXBUFSIZE];
-    snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname ? tname : "");
+    snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname);
     FILE *f = fopen(filename, "r");
     result = f ? 1 : 0;
     fclose(f);
