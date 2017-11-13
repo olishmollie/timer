@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
            case 'n':
                nflag = 1;
                tname = optarg;
+	       // TODO: Fix this bug
                if (is_command(tname)) {
                    error("invalid name '%s'", tname);
                }
