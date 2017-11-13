@@ -88,9 +88,9 @@ void print_report(time_t start_time)
 
 void print_status(char *tname)
 {
+    if (tname == NULL) tname = "root";
     int running = is_running(tname);
-    char *name = tname ? tname : "root";
-    printf("%s is %srunning\n", name, running ? "" : "not ");
+    printf("%s is %srunning\n", tname, running ? "" : "not ");
 }
 
 void print_list()
@@ -184,6 +184,7 @@ int stop_timer(char *tname)
 
 int is_running(char *tname)
 {
+    if (tname == NULL) tname = "root";
     int result;
     char filename[MAXBUFSIZE];
     snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname);
