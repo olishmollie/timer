@@ -230,7 +230,7 @@ int is_command(char *tname)
 
 void print_usage()
 {
-    printf("usage: timer command [<name>]\n");
+    printf("usage: timer <command> [<name>]\n");
 }
 
 void error(char *fmt, ...)

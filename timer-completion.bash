@@ -4,11 +4,11 @@ _timer() {
   root=$HOME/.timer
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD - 1]}"
-  commands="start stop status list"
+  commands="start stop create delete status list"
   timers="$(basename $root/*)"
 
   case "${prev}" in
-    start|stop|status)
+    start|stop|status|delete)
       COMPREPLY=( $(compgen -W "${timers}" -- ${cur}) )
       return 0;;
     *)
