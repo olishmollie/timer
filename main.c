@@ -12,7 +12,6 @@
 
 const unsigned long MAXBUFSIZE = 500;
 const int MAXTIMERS = 25;
-char *command_list[MAXTIMERS];
 char root[MAXBUFSIZE];
 
 int main(int argc, char *argv[])
@@ -30,71 +29,31 @@ int main(int argc, char *argv[])
         }
     }
 
-    int numtimers = 0;
-
     char *command, *tname = NULL;
-    char dirname[MAXBUFSIZE];
-    int c, nflag = 0, dflag = 0;
 
-    while ((c = getopt(argc, argv, "n:d:")) != -1) {
-       switch(c) {
-           case 'n':
-               nflag = 1;
-               tname = optarg;
-               if (is_command(tname)) {
-                   error("invalid name '%s'", tname);
-               }
-               break;
-           case 'd':
-               dflag = 1;
-               tname = optarg;
-               break;
-           case '?':
-               exit(opterr);
-           default:
-               ;
-       }
-    }
-
-    if (nflag) {
-        /* Create '~/.timer/<name>' directory */
-        snprintf(dirname, MAXBUFSIZE, "%s/%s", root, tname);
-        if (!create_directory(dirname)) {
-            error("unable to create timer '%s'", tname);
-        }
-    }
-
-    if (dflag) {
-        snprintf(dirname, MAXBUFSIZE, "%s/%s", root, tname);
-        if (is_running(tname)) {
-            print_status(tname);
-            exit(1);
-        }
-        errno = 0;
-        rmdir(dirname);
-        if (errno == ENOENT) {
-            error("cannot find timer '%s'", tname);
-        }
-        exit(0);
-    }
+    // TODO: variadic args
+    command = argv[1];
+    if (argc >= 3)
+        tname = argv[2];
 
     int success = 0;
 
-    if (optind != argc) {
+    command = argv[optind];
 
-        command = argv[optind];
-
-        if (strcmp(command, "start") == 0) {
-            success = start_timer(tname);
-        } else if (strcmp(command, "stop") == 0) {
-            success = stop_timer(tname);
-        } else if (strcmp(command, "status") == 0) {
-            print_status(tname);
-        } else if (strcmp(command, "list") == 0) {
-            print_list();
-        } else {
-            error("unknown command %s", command);
-        }
+    if (strcmp(command, "start") == 0) {
+        success = start_timer(tname);
+    } else if (strcmp(command, "stop") == 0) {
+        success = stop_timer(tname);
+    } else if (strcmp(command, "status") == 0) {
+        print_status(tname);
+    } else if (strcmp(command, "list") == 0) {
+        print_list();
+    } else if (strcmp(command, "create") == 0) {
+        create_timer(tname);
+    } else if (strcmp(command, "delete") == 0) {
+        delete_timer(tname);
+    } else {
+        error("unknown command %s", command);
     }
 
     return success;
@@ -137,7 +96,7 @@ void print_list()
     struct dirent *ent;
     int status;
     if ((dir = opendir(root)) != NULL) {
-        /* Print status of anonymous timer */
+        /* Print status of 'root' timer */
         status = is_running(NULL);
         printf("root: %srunning\n", status ? "" : "not ");
         while ((ent = readdir(dir)) != NULL) {
@@ -153,15 +112,39 @@ void print_list()
     }
 }
 
+void create_timer(char *tname)
+{
+    if (tname == NULL)
+	error("'create' takes argument <name>");
+    char dirname[MAXBUFSIZE];
+    snprintf(dirname, MAXBUFSIZE, "%s/%s", root, tname);
+    if (!create_directory(dirname))
+        error("unable to create timer '%s'", tname);
+}
+
+void delete_timer(char *tname)
+{
+    if (tname == NULL)
+	error("'delete' takes argument <name>");
+    char dirname[MAXBUFSIZE];
+    snprintf(dirname, MAXBUFSIZE, "%s/%s", root, tname);
+    if (is_running(tname))
+	error("%s is running", tname);
+    errno = 0;
+    rmdir(dirname);
+    if (errno == ENOENT)
+        error("cannot find timer '%s'", tname);
+}
+
 int start_timer(char *tname)
 {
-    char filename[MAXBUFSIZE];
-    snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname ? tname : "");
     if (is_running(tname)) {
-        print_status(tname);
-        return 0;
+	error("%s is running", tname);
+	return 1;
     } else {
         FILE *f;
+	char filename[MAXBUFSIZE];
+	snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname ? tname : "");
         if ((f = fopen(filename, "w")) != NULL) {
             time_t t = time(NULL);
             fprintf(f, "%lu\n", t);
@@ -176,13 +159,13 @@ int start_timer(char *tname)
 
 int stop_timer(char *tname)
 {
-    char filename[MAXBUFSIZE];
-    snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname ? tname : "");
     if (!is_running(tname)) {
-        print_status(tname);
-        return 0;
+	error("%s is not running", tname);
+        return 1;
     } else {
         FILE *f;
+	char filename[MAXBUFSIZE];
+	snprintf(filename, MAXBUFSIZE, "%s/%s/start.tm", root, tname ? tname : "");
         if ((f = fopen(filename, "r")) != NULL) {
             time_t t;
             fscanf(f, "%lu", &t);
@@ -247,9 +230,7 @@ int is_command(char *tname)
 
 void print_usage()
 {
-    printf("usage: timer [-n <name>] [start/stop/status]\n");
-    printf("       timer -d <name>\n");
-    printf("       timer list\n");
+    printf("usage: timer command [<name>]\n");
 }
 
 void error(char *fmt, ...)

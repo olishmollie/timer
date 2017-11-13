@@ -8,10 +8,7 @@ _timer() {
   timers="$(basename $root/*)"
 
   case "${prev}" in
-    -n)
-      COMPREPLY=( $(compgen -W "${timers}" -- ${cur}) )
-      return 0;;
-    -d)
+    start|stop|status)
       COMPREPLY=( $(compgen -W "${timers}" -- ${cur}) )
       return 0;;
     *)
