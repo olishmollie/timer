@@ -1,2 +1,2 @@
 timer: main.c
-	cc main.c -o timer
+	gcc -std=c11 main.c -o timer
