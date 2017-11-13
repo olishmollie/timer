@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
-#include <getopt.h>
 #include <stdarg.h>
 
 #include "timer.h"
@@ -40,8 +38,6 @@ int main(int argc, char *argv[])
         tname = argv[2];
 
     int success = 0;
-
-    command = argv[optind];
 
     if (strcmp(command, "start") == 0) {
         success = start_timer(tname);
